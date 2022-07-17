@@ -1,2 +1,8 @@
 # libkdp
-Concurrency library
+
+```
+
+int main() {
+    Thread thread = createThread();
+}
+```
