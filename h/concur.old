@@ -1,0 +1,325 @@
+#ifndef _CONCUR_H_
+#define _CONCUR_H_
+#include <semaphore.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <vector>
+#include <queue>
+#include <exception>
+#include <stdexcept>
+#include <assert.h>
+using namespace std;
+#define Thread pthread_t
+#define Process pthread_t
+#define createProcess createThread
+#define waitFor join
+#define Sem sem_t
+#define sleep(n) (usleep((n) * 1000))
+#define sleep_rand(n, m) (usleep(rand() % (m) + (n)))
+#define RED       "\e[31m"
+#define GREEN     "\e[32m"
+#define YELLOW    "\e[33m"
+#define BLUE      "\e[34m"
+#define MAGENTA   "\e[35m"
+#define BGRED     "\e[41m"
+#define BGGREEN   "\e[42m"
+#define BGYELLOW  "\e[43m"
+#define BGBLUE    "\e[44m"
+#define BGMAGENTA "\e[45m"
+#define REV       "\e[7m"
+#define NONE      "\e[0m"
+
+#define TS(x) test_and_set(&(x))
+#define FA(x, y) fetch_and_add(&(x), (y))
+
+pthread_t createThread(void (*func)(void));
+pthread_t createThread(void (*func)(int), int);
+pthread_t createThread(void (*func)(char*), char*);
+void wait(sem_t&);
+void signal(sem_t&);
+void init(sem_t&, int);
+void destroy(sem_t&);
+void join(pthread_t);
+void delay(int mili = 0);
+void rand_delay(int max = 0, int min = 0);
+void skip();
+void yield();
+
+void debug_lock();
+void debug_unlock();
+
+#define println(...) \
+    do { \
+        printf(__VA_ARGS__); \
+        printf("\n" NONE); \
+        fflush(stdout); \
+    } while (0)
+//#define debug(...)
+#define debug(...) \
+    do { \
+        printf(MAGENTA); \
+        printf(__VA_ARGS__); \
+        printf("\n" NONE); \
+        fflush(stdout); \
+    } while (0)
+
+#define print(...) \
+    do { \
+        printf(__VA_ARGS__); \
+        printf(NONE); \
+        fflush(stdout); \
+    } while (0)
+
+struct Monitor;
+//class cond_sem {
+//public:
+//    int m_prio;
+//    sem_t m_sem;
+//    cond_sem(int prio = 0) {
+//        m_prio = prio;
+//        sem_init(&m_sem, 0, 0);
+//    }
+//    ~cond_sem() {
+//        sem_destroy(&m_sem);
+//    }
+//    void wait() {
+//        sem_wait(&m_sem);
+//    }
+//    void signal() {
+//        sem_post(&m_sem);
+//    }
+//    bool operator<(const cond_sem& other) const {
+//        return m_prio > other.m_prio;
+//    }
+//};
+//
+//struct cond_sem_cmp {
+//    bool operator()(cond_sem* x, cond_sem* y) const {
+//        return x->m_prio > y->m_prio;
+//    }
+//};
+
+struct sem_prio_t {
+    int m_fifo;
+    int m_val;
+    sem_t *m_sem;
+};
+
+struct sem_prio_cmp_t {
+    bool operator()(const sem_prio_t* p_a, const sem_prio_t* p_b) {
+        if (p_a == 0 || p_b == 0)
+            return false;
+        return p_a->m_val > p_b->m_val || (p_a->m_val == p_b->m_val && p_a->m_fifo > p_b->m_fifo);
+    }
+};
+
+struct cond {
+    cond(Monitor*);
+    ~cond();
+    bool empty();
+    int queue();
+    void wait(int prio = 0);
+    void signal();
+    void signalAll();
+    void signal_all();
+    int minrank();
+protected:
+    Monitor *m_monitor;
+    int m_count;
+    int m_fifo;
+    sem_t *m_cv;
+    sem_t *m_queue_mutex;
+    priority_queue<sem_prio_t*, vector<sem_prio_t*>, sem_prio_cmp_t> *m_queue;
+    //priority_queue<cond_sem*, vector<cond_sem*>, cond_sem_cmp> m_queue;
+};
+enum {
+    SIGNAL_AND_NOTHING,
+    SIGNAL_AND_CONTINUE,
+    SIGNAL_AND_WAIT,
+    SIGNAL_AND_URGENT_WAIT,
+};
+enum {
+    SC,
+    SW
+};
+
+struct Monitor {
+    Monitor(int disc = SC);
+    virtual ~Monitor();
+    void lock();
+    void unlock();
+protected:
+    int m_disc;
+    //queue<pthread_cond_t> m_waited;
+    //vector<pthread_cond_t> m_urgent_waited;
+    //mutable pthread_mutex_t m_mutex;
+    //friend struct cond;
+    sem_t *m_waited;
+    sem_t *m_mutex;
+    int m_waited_count;
+    int m_unblocked_count;
+    friend class cond;
+};
+
+struct MonitorLock {
+    MonitorLock(Monitor *_monitor) : m_monitor(_monitor), m_once(true){
+        m_monitor->lock();
+    }
+    ~MonitorLock() {
+        m_monitor->unlock();
+    }
+    bool once() {
+        bool old = m_once;
+        m_once = false;
+        return old;
+    }
+protected:
+    bool m_once;
+    Monitor *m_monitor;
+};
+
+#define monitor \
+    for (MonitorLock _m_lock(this);_m_lock.once();)
+
+template <typename T, int N> struct BoundedBuffer {
+    BoundedBuffer() : m_head(0), m_tail(0), m_count(0) {
+        
+    }
+    void put(T data) 
+    {
+        if (m_count == N)
+            throw std::runtime_error("Buffer overlow");
+        m_data[m_head] = data;
+        m_head = (m_head + 1) % N;
+        m_count += 1;
+    }
+    T get() 
+    {
+        if (m_count == 0)
+            throw std::runtime_error("Empty buffer");
+        T ret = m_data[m_tail];
+        m_tail = (m_tail + 1) % N;
+        m_count -= 1;
+        return ret;
+    }
+    int count() const 
+    {
+        return m_count;
+    }
+    void for_each(void (*cb)(T)) 
+    {
+        int iter = m_tail;
+        while (iter != m_head) {
+            cb(m_data[iter]);
+            iter = (iter + 1) % N;
+        }
+    }
+    void show() {
+        for_each([&](T data){
+            printf("%d ", data);
+        });
+        printf("\n");
+        fflush(stdout);
+    }
+protected:
+    int m_count;
+    int m_head;
+    int m_tail;
+    T m_data[N];
+};
+int test_and_set(volatile int *lock);
+int fetch_and_add(volatile int *x, int val);
+void work(int ms);
+
+
+struct Region {
+    Region() {
+        pthread_mutex_init(&m_mutex, 0);
+        pthread_cond_init(&m_cond, 0);
+    }
+    virtual ~Region() {
+        pthread_mutex_destroy(&m_mutex);
+        pthread_cond_destroy(&m_cond);
+    }
+    void lock() {
+        pthread_mutex_lock(&m_mutex);
+    }
+    void unlock() {
+        pthread_cond_broadcast(&m_cond);
+        pthread_mutex_unlock(&m_mutex);
+    }
+    void wait() {
+        pthread_cond_wait(&m_cond, &m_mutex);
+    }
+    mutable pthread_mutex_t m_mutex;
+    mutable pthread_cond_t m_cond;
+};
+
+struct REGION {
+    Region& m_region;
+    REGION(Region& r) : m_region(r) {
+        m_region.lock();
+    }
+    ~REGION() {
+        m_region.unlock();
+    }
+    void wait() {
+        m_region.wait();
+    }
+    bool once() {
+        if (m_once) {
+            m_once = false;
+            return true;
+        }
+        return false;
+    }
+    bool m_once = true;
+};
+
+#define region(r) \
+    for (REGION _region(r);_region.once();)
+
+#define await(x)\
+    while (! (x))  \
+        _region.wait();
+
+struct msg_t;
+struct mbx_t {
+    const char *name;
+};
+#define INF -1
+void mbx_put(msg_t* msg, mbx_t mbx);
+void mbx_get(msg_t* msg, mbx_t mbx, int duration, int* status = 0);
+mbx_t mbx_open(const char *, ...);
+void mbx_close(mbx_t);
+#define msg_put mbx_put
+#define msg_get mbx_get
+
+#define SUCCESS 0
+#define FAILURE -1
+#define EXPIRED -2
+
+
+struct SC_Monitor : Monitor {
+    SC_Monitor() : Monitor(SC) {
+    
+    }
+};
+
+struct SW_Monitor : Monitor {
+    SW_Monitor() : Monitor(SW) {
+    
+    }
+
+};
+
+struct SUW_Monitor : Monitor {
+    SUW_Monitor() : Monitor(SIGNAL_AND_URGENT_WAIT) {
+    
+    }
+};
+
+#endif
+
