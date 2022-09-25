@@ -605,7 +605,7 @@ static Linda linda;
 
 bool inp(LT a, LT b, LT c, LT d, LT e, LT f) 
 {
-    linda.inp(a, b, c, d, e, f);
+    return linda.inp(a, b, c, d, e, f);
 }
 void in (LT a, LT b, LT c, LT d, LT e, LT f)
 {
@@ -621,7 +621,7 @@ void rd (LT a, LT b, LT c, LT d, LT e, LT f)
 }
 bool rdp(LT a, LT b, LT c, LT d, LT e, LT f)
 {
-    linda.rdp(a, b, c, d, e, f);
+    return linda.rdp(a, b, c, d, e, f);
 }
 void show()
 {
@@ -691,6 +691,7 @@ static std::vector<impl_mbx_t> mbx_vec;
 
 mbx_t mbx_open(const char *fmt, ...) 
 {
+    return mbx_t{};
 }
 
 void _mbx_get(msg_t *msg, mbx_t mbx, int len, int *status) 
