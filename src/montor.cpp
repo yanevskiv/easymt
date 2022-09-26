@@ -1,179 +1,294 @@
 #include <montor.h>
 #include <assert.h>
+#include <queue>
+#include <vector>
+#include <semaphore.h>
 
-cond::cond(Monitor *_monitor) : m_monitor(_monitor)
+struct SemPrioCmp;
+struct SemPrio {
+    SemPrio(int prio, int fifo) : m_prio(prio), m_fifo(fifo) { sem_init(&m_sem, 0, 0); }
+    ~SemPrio() { sem_destroy(&m_sem); }
+    void wait() { sem_wait(&m_sem); }
+    void signal() { sem_post(&m_sem); }
+    int rank() const { return m_prio; }
+private:
+    friend class SemPrioCmp;
+    int m_fifo;
+    int m_prio;
+    sem_t m_sem;
+};
+
+struct SemPrioCmp {
+    bool operator()(const SemPrio* sa, const SemPrio* sb)
+    {
+        if (sa == nullptr || sb == nullptr)
+            return false;
+        return sa->m_prio > sb->m_prio
+            || (sa->m_prio == sb->m_prio && sa->m_fifo > sb->m_fifo);
+    }
+};
+
+struct ImplMonitor {
+    ImplMonitor(int disc);
+    ~ImplMonitor();
+    void enter();
+    void leave();
+    int disc() const;
+private:
+    friend class ImplCond;
+    int m_wfifo;
+    int m_efifo;
+    int m_wcount;
+    int m_disc;
+    sem_t m_wait;
+    sem_t m_mutex;
+    std::queue<SemPrio*> m_wqueue;
+};
+
+struct ImplCond {
+    ImplCond(ImplMonitor *mon);
+    ~ImplCond();
+    bool empty() const;
+    int queue() const;
+    void wait(int prio = 0);
+    void signal();
+    void signalAll();
+    void signal_all();
+    int minrank() const;
+    void set_monitor(ImplMonitor*);
+private:
+    std::priority_queue<SemPrio*, std::vector<SemPrio*>, SemPrioCmp> m_queue;
+    ImplMonitor *m_monitor;
+    int m_count;
+    int m_fifo;
+};
+
+
+ImplMonitor::ImplMonitor(int disc)
+    : m_disc(disc), m_wcount(0), m_wfifo(0), m_efifo(0)
 {
-    m_fifo = 0;
-    m_count = 0;
-    m_cv = new sem_t;
-    m_queue_mutex = new sem_t;
-    sem_init(m_cv, 0, 0);
-    sem_init(m_queue_mutex, 0, 1);
-    m_queue = new priority_queue<sem_prio_t*, vector<sem_prio_t*>, sem_prio_cmp_t>;
+    sem_init(&m_wait, 0, 0);
+    sem_init(&m_mutex, 0, 1);
 }
 
-void cond::set_monitor(Monitor *_monitor)
+ImplMonitor::~ImplMonitor()
 {
-    m_monitor = _monitor;
+    sem_destroy(&m_wait);
+    sem_destroy(&m_mutex);
 }
 
-cond::~cond() 
+void ImplMonitor::enter() 
 {
-    sem_destroy(m_queue_mutex);
-    sem_destroy(m_cv);
-    delete m_cv;
-    delete m_queue_mutex;
+    sem_wait(&m_mutex);
 }
 
-void cond::wait(int prio) 
+
+void ImplMonitor::leave()
 {
-    sem_t *sem = new sem_t;
-    int res = sem_init(sem, 0, 0);
-    assert(res == 0);
-    m_count += 1;
-    sem_prio_t *sem_prio = new sem_prio_t;
-    sem_prio->m_sem = sem;
-    sem_prio->m_val = prio;
-    sem_prio->m_fifo = m_fifo;
-    m_fifo += 1;
-    m_queue->push(sem_prio);
-
-
-    if (m_monitor->m_disc == SW && m_monitor->m_waited_count > 0) {
-        sem_post(m_monitor->m_waited);
+    if (m_disc == SW && m_wcount > 0) {
+        sem_post(&m_wait);
+    } else if (m_disc == SUW && ! m_wqueue.empty()) {
+        SemPrio *sem = m_wqueue.front(); 
+        m_wqueue.pop();
+        sem->signal();
     } else {
-        sem_post(m_monitor->m_mutex);
+        sem_post(&m_mutex);
     }
-    sem_wait(sem);
-    sem_destroy(sem);
+}
+
+int ImplMonitor::disc() const
+{
+    return m_disc;
+}
+
+
+
+ImplCond::ImplCond(ImplMonitor *mon)
+    : m_monitor(mon), m_fifo (0)
+{
+}
+
+ImplCond::~ImplCond()
+{
+    // empty
+}
+
+bool ImplCond::empty() const
+{
+    return m_queue.empty();
+}
+
+int ImplCond::queue() const
+{
+    return m_queue.size();
+}
+
+void ImplCond::wait(int prio)
+{
+    SemPrio *sem = new SemPrio{prio, m_fifo++};
+    m_queue.push(sem);
+    m_monitor->leave();
+    sem->wait();
     delete sem;
-    delete sem_prio;
-    if (m_monitor->m_disc == SC)
-        sem_wait(m_monitor->m_mutex);
-    //sem_wait(&m_cv);
-
-    //if (m_monitor->m_disc == SIGNAL_AND_NOTHING) {
-    //    pthread_cond_wait(&m_cond, &(m_monitor->m_mutex));
-    //} else if (m_monitor->m_disc == SIGNAL_AND_CONTINUE) {
-    //    pthread_cond_wait(&m_cond, &(m_monitor->m_mutex));
-    //    //pthread_cond_wait(&m_cond, m_mutex);
-    //    //pthread_cond_t *p_cond = new pthread_cond_t;
-    //    //pthread_cond_init(p_cond, 0);
-
-    //    ////cond_elem elem(p_cond, prio);
-    //    ////m_queue.push(elem);
-    //    //m_queue2.push_back(p_cond);
-    //    //pthread_cond_wait(p_cond, &(m_monitor->m_mutex));
-    //}
+    if (m_monitor->disc() == SC)
+        m_monitor->enter();
 }
 
-void cond::signal() 
+void ImplCond::signal()
 {
-    if (m_count > 0) {
-        if (m_monitor->m_disc == SW) 
-            m_monitor->m_waited_count += 1;
-        //sem_post(&m_cv);
-
-
-        //if (m_queue.top()) {
-        //    cond_sem *sem = m_queue.top();
-        //    m_queue.pop();
-        //    printf("(%d) ", sem->m_prio);
-        //    sem->signal();
-        //}
-        sem_prio_t *prio = nullptr;
-        if (! m_queue->empty()) {
-            prio = m_queue->top();
-            m_queue->pop();
+    if (! m_queue.empty()) {
+        SemPrio *wsem = nullptr;
+        if (m_monitor->disc() == SW) {
+            m_monitor->m_wcount++;
+        } if (m_monitor->disc() == SUW) {
+            wsem = new SemPrio{0, m_monitor->m_wfifo++};
+            m_monitor->m_wqueue.push(wsem);
         }
-        if (prio) {
-            m_count -= 1;
-            sem_post(prio->m_sem);
-        }
-
-        if (m_monitor->m_disc == SW)  {
-            sem_wait(m_monitor->m_waited);
-            m_monitor->m_waited_count -= 1;
+        SemPrio* sem = m_queue.top();
+        m_queue.pop();
+        sem->signal();
+        if (m_monitor->disc() == SW) {
+            sem_wait(&m_monitor->m_wait);
+            m_monitor->m_wcount--;
+        } else if (m_monitor->disc() == SUW && wsem != nullptr) {
+            wsem->wait();
         }
     }
-    //if (m_monitor->m_disc == SIGNAL_AND_NOTHING) {
-    //    pthread_cond_broadcast(&m_cond);
-    //} else if (m_monitor->m_disc == SIGNAL_AND_CONTINUE) {
-    //    //if (! m_queue.empty()) {
-    //    //    //cond_elem elem = m_queue.top();
-    //    //    //m_queue.pop();
-    //    //    //pthread_cond_broadcast(&(elem.m_cond));
-    //    //    pthread_cond_t *c = m_queue2.back();
-    //    //    m_queue2.pop_back();
-    //    //    pthread_cond_signal(c);
-    //    //}
-    //}
 }
 
-void cond::signalAll() 
+void ImplCond::signalAll()
 {
-    if (m_monitor->m_disc == SC)  {
-        while (m_count > 0) {
+    if (m_monitor->disc() == SC) {
+        while (! m_queue.empty())
             this->signal();
-        }
-    } else if (m_monitor->m_disc == SW) {
-        perror("\"Signal all\" cannot be used with Signal-And-Wait discipline.\n");
+    } else {
     }
 }
 
-void cond::signal_all() 
+int ImplCond::minrank() const
 {
-    signalAll();
-}
-int cond::minrank() 
-{
-    if (! m_queue->empty()) {
-        sem_prio_t *prio = m_queue->top();
-        return prio->m_val;
+    if (! m_queue.empty()) {
+        SemPrio *prio = m_queue.top();
+        return prio->rank();
     }
     return 0;
 }
 
-int cond::queue() 
+void ImplCond::set_monitor(ImplMonitor *mon)
 {
-    return m_count;
-}
-
-bool cond::empty() 
-{
-    return (m_count == 0);
+    m_monitor = mon;
 }
 
 
-Monitor::Monitor(int disc) : m_disc(disc)
+
+cond::cond(Monitor *mon)
+    : m_impl(new ImplCond(mon->m_impl))
 {
-    m_mutex = new sem_t;
-    m_waited = new sem_t;
-    m_waited_count = 0;
-    sem_init(m_mutex, 0, 1);
-    sem_init(m_waited, 0, 0);
+    // empty
+}
+
+cond::~cond() 
+{
+    delete m_impl;
+}
+
+bool cond::empty()
+{
+    return m_impl->empty();
+}
+
+int cond::queue()
+{
+    return m_impl->queue();
+}
+
+int cond::minrank()
+{
+    return m_impl->minrank();
+}
+
+void cond::wait(int prio)
+{
+    m_impl->wait(prio);
+}
+
+void cond::signal()
+{
+    m_impl->signal();
+}
+
+void cond::signalAll()
+{
+    m_impl->signalAll();
+}
+
+void cond::signal_all()
+{
+    m_impl->signalAll();
+}
+
+
+void cond::set_monitor(Monitor *mon)
+{
+    m_impl->set_monitor(mon->m_impl);
+}
+
+Monitor::Monitor(int disc) 
+    : m_impl(new ImplMonitor(disc))
+{
+    // empty
 }
 
 Monitor::~Monitor()
 {
-    sem_destroy(m_mutex);
-    sem_destroy(m_waited);
-    delete m_mutex;
-    delete m_waited;
+    delete m_impl;
 }
 
-void Monitor::lock() 
+void Monitor::enter()
 {
-    //debug("Monitor lock()");
-    sem_wait(m_mutex);
+    m_impl->enter();
 }
-void Monitor::unlock() 
+
+void Monitor::leave()
 {
-    if (m_disc == SW && m_waited_count > 0) {
-        //debug("Monitor unlock() waiting...");
-        sem_post(m_waited);
-    } else {
-        //debug("Monitor unlock() mutex...");
-        sem_post(m_mutex);
-    }
+    m_impl->leave();
 }
+
+int Monitor::disc() const
+{
+    return m_impl->disc();
+}
+
+void wait(cond& c, int prio)
+{
+    c.wait(prio);
+}
+
+void signal(cond& c)
+{
+    c.signal();
+}
+
+void signalAll(cond& c)
+{
+    c.signalAll();
+}
+void signal_all(cond& c)
+{
+    c.signal_all();
+}
+int minrank(cond& c)
+{
+    return c.minrank();
+}
+
+bool empty(cond& c)
+{
+    return c.empty();
+}
+
+int queue(cond& c)
+{
+    return c.queue();
+}
+

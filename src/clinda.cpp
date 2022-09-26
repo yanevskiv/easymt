@@ -1,6 +1,28 @@
 #include <thread.h>
 #include <clinda.h>
 #include <cstring>
+class Linda {
+    std::vector<pthread_t> m_eval;
+    std::vector<LTP> m_data;
+    mutable pthread_mutex_t m_mutex;
+    mutable pthread_cond_t m_cond;
+    
+public:
+    Linda();
+    ~Linda();
+    bool inp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+    void in (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+    void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+    void rd (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+    bool rdp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+    void add_eval(std::function<void()>*);
+    void add_eval(std::function<int()>);
+    void add_eval(std::function<double()>);
+    void add_eval(std::function<const char *()>);
+    void waitFor();
+    void show();
+};
+
 LT::LT() 
 {
     m_type = LT_NONE;
@@ -324,9 +346,9 @@ void add_eval(std::function<void()> *f)
 //}
 
 #undef main
-extern int KDP_main();
+extern int init();
 int main() {
-    KDP_main();
+    init();
     linda.waitFor();
     return 0;
 }

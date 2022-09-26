@@ -2,64 +2,191 @@
 #include <thread.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <pthread.h>
 #define tvms(tv) ((tv).tv_sec * 1000 + (tv).tv_usec / 1000)
 #define tvus(tv) ((tv).tv_sec * 1000 * 1000 + (tv).tv_usec)
 
-static void *wrapper(void* void_func)
+// `Thread` implementation
+struct ImplThread {
+    ImplThread();
+    ImplThread(void (*)(void));
+    template <typename T> ImplThread(void (*)(T), const T&);
+    ~ImplThread();
+    void join();
+    bool active() const;
+private:
+    pthread_t m_pthread;
+    bool m_active;
+};
+
+// wrapper function used for `void f(void)` threads
+static void *wrapper_void_func(void* void_func)
 {
     void (*func)(void) = (void (*)(void)) void_func;
     func();
     return 0;
 }
 
-pthread_t createThread(void (*func)(void))
-{
-    pthread_t thread;
-    pthread_create(&thread, 0, wrapper, (void*)func);
-    return thread;
-}
-
-struct struct_id_t {
-    void (*m_func)(int);
-    int m_id;
+// generic data 
+template <typename T> struct WrapperData {
+    void (*m_func)(T);
+    T m_data;
+    WrapperData(void (*func)(T), const T& data)
+        : m_func(func), m_data(data)
+    {
+        // nothing
+    }
 };
 
-static void *wrapper_id(void *data)
+// generic pthread wrapper function
+template <typename T> void *wrapper_data_func(void *data)
 {
-    struct_id_t *struct_id = (struct_id_t*) data;
-    struct_id->m_func(struct_id->m_id);
-    free(struct_id);
-    return 0;
+    WrapperData<T>* wrapperData = static_cast<WrapperData<T>*>(data);
+    if (wrapperData) {
+        wrapperData->m_func(wrapperData->m_data);
+    }
+    delete wrapperData;
+    return NULL;
 }
 
-pthread_t createThread(void (*func)(int), int id)
+ImplThread::ImplThread()
+    : m_active(false)
 {
-    struct_id_t *struct_id = (struct_id_t*)calloc(1, sizeof(struct_id_t));
-    struct_id->m_func  = func;
-    struct_id->m_id = id;
-    assert(struct_id != 0);
-
-    pthread_t thread;
-    int creation = pthread_create(&thread, 0, wrapper_id, (void*)struct_id);
-    assert(creation == 0);
-    return thread;
 }
 
-void join(pthread_t thread)
+ImplThread::ImplThread(void (*func)(void))
+    : m_active(true)
 {
-    pthread_join(thread, 0);
+    pthread_create(
+        &m_pthread, 
+        NULL, 
+        wrapper_void_func, 
+        (void*)func
+    );
 }
 
+template <typename T> ImplThread::ImplThread(void (*func)(T), const T& data)
+    : m_active(true)
+{
+    pthread_create(
+        &m_pthread, 
+        NULL, 
+        wrapper_data_func<T>, 
+        new WrapperData<T>(func, data)
+    );
+}
+
+ImplThread::~ImplThread() {
+
+}
+
+// join thread
+void ImplThread::join()
+{
+    pthread_join(m_pthread, NULL);
+}
+
+// check thread is executing something
+bool ImplThread::active() const
+{
+    return m_active;
+}
+
+
+Thread::Thread()
+    : m_impl (new ImplThread())
+{
+    // nothing
+}
+
+Thread::Thread(void (*func)(void))
+    : m_impl (new ImplThread(func))
+{
+    // nothing
+}
+
+Thread::Thread(void (*func)(int), int id)
+    : m_impl (new ImplThread(func, id))
+{
+    // nothing
+}
+
+Thread::Thread(void (*func)(const char*), const char *name)
+    : m_impl (new ImplThread(func, name))
+{
+    // nothing
+}
+
+Thread::Thread(Thread&& th)
+{
+    if (&th != this) {
+        delete this->m_impl;
+        this->m_impl = th.m_impl;
+    }
+}
+
+Thread& Thread::operator=(Thread&& th) 
+{
+    if (&th != this) {
+        delete this->m_impl;
+        this->m_impl = th.m_impl;
+    }
+    return *this;
+}
+
+Thread::~Thread() 
+{
+    // nothing
+}
+
+void Thread::join()
+{
+    m_impl->join();
+}
+
+bool Thread::active() const
+{
+    return m_impl->active();
+}
+
+
+// create a new thread
+Thread createThread(void (*func)(void))
+{
+    return Thread(func);
+}
+
+// createa a new thread with id
+Thread createThread(void (*func)(int), int id)
+{
+    return Thread(func, id);
+}
+
+// create a new thread with name
+Thread createThread(void (*func)(const char*), const char* name)
+{
+    return Thread(func, name);
+}
+
+// join thread
+void join(Thread& thread)
+{
+    thread.join();
+}
+
+// yield execution
 void skip()
 {
     usleep(0);
 }
 
+// yield execution no delay
 void yield()
 {
     pthread_yield();
 }
 
+// busy wait (miliseconds)
 void work(int ms) 
 {
     struct timeval tv_init, tv_next;
@@ -71,6 +198,7 @@ void work(int ms)
     } while (true);
 }
 
+// busy wait (microseconds);
 void nanowork(int us) 
 {
     struct timeval tv_init, tv_next;

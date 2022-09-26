@@ -1,29 +1,20 @@
 #ifndef _MONTOR_H_
 #define _MONTOR_H_
 #include <thread.h>
-#include <semfor.h>
-#include <region.h>
-#include <queue>
-#include <vector>
-using namespace std;
+#define SC 0
+#define SW 1
+#define SUW 2
+
 struct Monitor;
+struct cond;
+struct ImplMonitor;
+struct ImplCond;
 
-struct sem_prio_t {
-    int m_fifo;
-    int m_val;
-    sem_t *m_sem;
-};
-
-struct sem_prio_cmp_t {
-    bool operator()(const sem_prio_t* p_a, const sem_prio_t* p_b) {
-        if (p_a == 0 || p_b == 0)
-            return false;
-        return p_a->m_val > p_b->m_val || (p_a->m_val == p_b->m_val && p_a->m_fifo > p_b->m_fifo);
-    }
-};
-
+// condition
 struct cond {
-    cond(Monitor *_monitor = nullptr);
+    // 
+    cond(Monitor *mon = nullptr);
+
     ~cond();
     bool empty();
     int queue();
@@ -32,72 +23,90 @@ struct cond {
     void signalAll();
     void signal_all();
     int minrank();
-    void set_monitor(Monitor *_monitor);
-protected:
-    Monitor *m_monitor;
-    int m_count;
-    int m_fifo;
-    sem_t *m_cv;
-    sem_t *m_queue_mutex;
-    priority_queue<sem_prio_t*, vector<sem_prio_t*>, sem_prio_cmp_t> *m_queue;
-};
-enum {
-    SC,
-    SW,
-    SUW
+    void set_monitor(Monitor*);
+private:
+    ImplCond *m_impl;
 };
 
+// generic monitor
 struct Monitor {
     Monitor(int disc = SC);
     virtual ~Monitor();
-    void lock();
-    void unlock();
+    void enter();
+    void leave();
+    int disc() const;
 protected:
-    int m_disc;
-    sem_t *m_waited;
-    sem_t *m_mutex;
-    int m_waited_count;
     friend class cond;
+    ImplMonitor *m_impl;
 };
 
+// wait on condition 
+// if priority is omitted, FIFO is assumed
+void wait(cond&, int prio = 0);
 
+// signal a thread waiting on condition
+// if there are no threads do nothing 
+void signal(cond&);
+
+// signal every thread waiting on condition
+// (only allowed under `Signal-And-Continue` discipline)
+void signalAll(cond&);
+
+// same as above
+void signal_all(cond&);
+
+//
+int minrank(cond&);
+bool empty(cond&);
+int queue(cond&);
+
+
+// Signal-And-Continue monitor
 struct SC_Monitor : Monitor {
     SC_Monitor() : Monitor(SC) {
     
     }
 };
 
+// Signal-And-Wait monitor
 struct SW_Monitor : Monitor {
     SW_Monitor() : Monitor(SW) {
     
     }
-
 };
 
+// Signal-And-Urgent-Wait monitor
 struct SUW_Monitor : Monitor {
     SUW_Monitor() : Monitor(SUW) {
     
     }
 };
 
-struct MONITOR {
-    MONITOR (Monitor *_monitor) : m_monitor(_monitor), m_once(true){
-        m_monitor->lock();
+// RAII monitor lock
+struct RAII_MONITOR_LOCK {
+    RAII_MONITOR_LOCK (Monitor *_monitor) 
+        : m_monitor(_monitor), 
+          m_checked(false)
+    {
+        m_monitor->enter();
     }
-    ~MONITOR () {
-        m_monitor->unlock();
+    ~RAII_MONITOR_LOCK () {
+        m_monitor->leave();
     }
-    bool once() {
-        bool old = m_once;
-        m_once = false;
-        return old;
+    bool checkOnce() {
+        if (m_checked)
+            return false;
+        return (m_checked = true);
     }
 protected:
-    bool m_once;
+    bool m_checked;
     Monitor *m_monitor;
 };
 
+// monitor block
+// (same as `syncrhonized (this)` in other languages)
 #define monitor \
-    for (MONITOR _m_lock(this);_m_lock.once();)
+    for (RAII_MONITOR_LOCK _m_lock(this);_m_lock.checkOnce();)
 
 #endif
+

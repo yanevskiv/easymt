@@ -6,11 +6,13 @@
 #define YELLOW    "\e[33m"
 #define BLUE      "\e[34m"
 #define MAGENTA   "\e[35m"
+#define CYAN      "\e[35m"
 #define BGRED     "\e[41m"
 #define BGGREEN   "\e[42m"
 #define BGYELLOW  "\e[43m"
 #define BGBLUE    "\e[44m"
 #define BGMAGENTA "\e[45m"
+#define BGCYAN    "\e[46m"
 #define REV       "\e[7m"
 #define NONE      "\e[0m"
 
@@ -20,7 +22,7 @@
         printf("\n" NONE); \
         fflush(stdout); \
     } while (0)
-//#define debug(...)
+
 #define debug(...) \
     do { \
         printf(MAGENTA); \
