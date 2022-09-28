@@ -11,7 +11,6 @@
 #define TS(x) test_and_set(&(x))
 #define FA(x, y) fetch_and_add(&(x), (y))
 #define GS(x, y) get_and_set(&(x), (y))
-#define main init
 
 struct ImplThread;
 
@@ -60,10 +59,10 @@ void skip();
 void yield();
 
 // busy wait (miliseconds)
-void work(int ms);
+void work(int ms = 1);
 
 // busy wait (microseconds)
-void nanowork(int us);
+void uwork(int us = 1);
 
 #endif
 

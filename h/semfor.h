@@ -1,7 +1,6 @@
 #ifndef _SEMFOR_H_
 #define _SEMFOR_H_
 #include <semaphore.h>
-//#define Sem sem_t
 struct ImplSem;
 struct Sem {
     Sem();
@@ -19,9 +18,16 @@ private:
     ImplSem *m_impl;
 };
 
+// wait on semaphore (P(s))
 void wait(Sem&);
+
+// signal semaphore (V(s))
 void signal(Sem&);
-void inits(Sem&, int);
+
+// initialize semaphore
+void init(Sem&, int);
+
+// destroy semaphore
 void destroy(Sem&);
 
 

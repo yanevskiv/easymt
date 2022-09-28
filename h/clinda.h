@@ -45,7 +45,7 @@ void in (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
 void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
 void rd (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
 bool rdp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
-void show();
+void listp();
 
 void add_eval(std::function<void()>*);
 void add_eval(std::function<int()>);
@@ -59,5 +59,7 @@ void add_eval(std::function<const char *()>);
         }); \
         add_eval(_f);\
     } while (0)
+
+#define main init 
 
 #endif

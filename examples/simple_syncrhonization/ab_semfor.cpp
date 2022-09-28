@@ -21,8 +21,8 @@ void b()
 }
 
 int main() {
-    init(sa, 1);
-    init(sb, 0);
+    inits(sa, 1);
+    inits(sb, 0);
     Thread ta = createThread(a);
     Thread tb = createThread(b);
     join(ta);

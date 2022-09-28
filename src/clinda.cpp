@@ -1,6 +1,9 @@
 #include <thread.h>
 #include <clinda.h>
 #include <cstring>
+#include <vector>
+#include <stdexcept>
+
 class Linda {
     std::vector<pthread_t> m_eval;
     std::vector<LTP> m_data;
@@ -20,7 +23,7 @@ public:
     void add_eval(std::function<double()>);
     void add_eval(std::function<const char *()>);
     void waitFor();
-    void show();
+    void listp();
 };
 
 LT::LT() 
@@ -197,6 +200,7 @@ void Linda::in(LT a, LT b, LT c, LT d, LT e, LT f)
     }
     pthread_mutex_unlock(&m_mutex);
 }
+
 void Linda::out(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -205,6 +209,7 @@ void Linda::out(LT a, LT b, LT c, LT d, LT e, LT f)
     pthread_cond_broadcast(&m_cond);
     pthread_mutex_unlock(&m_mutex);
 }
+
 void Linda::rd(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -241,7 +246,7 @@ bool Linda::rdp(LT a, LT b, LT c, LT d, LT e, LT f)
     return found;
 }
 
-void Linda::show()
+void Linda::listp()
 {
     pthread_mutex_lock(&m_mutex);
     print("Tuple space (count: %d):\n", (int)m_data.size());
@@ -302,9 +307,9 @@ bool rdp(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     return linda.rdp(a, b, c, d, e, f);
 }
-void show()
+void listp()
 {
-    linda.show();
+    linda.listp();
 }
 
 void Linda::add_eval(std::function<void()> *f)
@@ -312,7 +317,11 @@ void Linda::add_eval(std::function<void()> *f)
     pthread_t p;
     pthread_create(&p, NULL, [](void* data) -> void*{
         std::function<void()> *fn = (std::function<void()>*)data;
-        (*fn)();
+        try {
+            (*fn)();
+        } catch (const char *msg) {
+            println(RED " !!! " NONE "Error: %s", msg);
+        }
         return data;
     }, f);
     m_eval.push_back(p);
@@ -348,7 +357,11 @@ void add_eval(std::function<void()> *f)
 #undef main
 extern int init();
 int main() {
-    init();
+    try {
+        init();
+    } catch (const char* msg) {
+        println(RED " !!! " NONE "Error: %s", msg);
+    }
     linda.waitFor();
     return 0;
 }

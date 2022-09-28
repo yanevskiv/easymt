@@ -4,27 +4,33 @@
 #define INF -1
 #define msg_put mbx_put
 #define msg_get mbx_get
-#define SUCCESS 0
-#define FAILURE -1
-#define EXPIRED -2
-#include <vector>
+#define SUCCESS 1
+#define UNKNOWN 0
+#define EXPIRED -1
 
 struct msg_t;
 struct mbx_t {
-    static int globalId;
     int m_id;
     mbx_t();
-    ~mbx_t();
+    mbx_t(int);
+    mbx_t(const char*);
 };
 
 void  _mbx_put(msg_t *msg, mbx_t mbx);
-void  _mbx_get(msg_t *msg, mbx_t mbx, int duration, int* status = 0);
+void  _mbx_get(msg_t **msg, mbx_t mbx, int len = INF, int* st = nullptr);
 mbx_t mbx_open(const char *, ...);
-void  mbx_close(mbx_t);
+void  mbx_close(mbx_t&);
+
 #define mbx_put(msg, mbx) \
     _mbx_put(new msg_t{ (msg) }, (mbx))
-#define mbx_get(msg, mbx, len, st) \
-    _mbx_get(&(msg), (mbx), (len), (st))
 
+#define mbx_get(msg, mbx, len, st) \
+    do { \
+        msg_t *_m_tmp; \
+        _mbx_get(&_m_tmp, (mbx), (len), (st)); \
+        if (_m_tmp) \
+            (msg) = *_m_tmp; \
+        delete _m_tmp; \
+    } while (0)
 
 #endif

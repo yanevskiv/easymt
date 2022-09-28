@@ -20,11 +20,19 @@ private:
 };
 
 // wrapper function used for `void f(void)` threads
-static void *wrapper_void_func(void* void_func)
+static void *wrapper_void_func(void* void_func) try
 {
     void (*func)(void) = (void (*)(void)) void_func;
-    func();
-    return 0;
+    try {
+        func();
+    } catch (const char *msg) {
+        println(RED " !!! " NONE "Error: %s", msg);
+    }
+
+    return nullptr;
+} catch (const char *msg) {
+    println(RED " !!! " NONE "Error: %s", msg);
+    return nullptr;
 }
 
 // generic data 
@@ -39,15 +47,19 @@ template <typename T> struct WrapperData {
 };
 
 // generic pthread wrapper function
-template <typename T> void *wrapper_data_func(void *data)
+template <typename T> void *wrapper_data_func(void *data) 
 {
     WrapperData<T>* wrapperData = static_cast<WrapperData<T>*>(data);
     if (wrapperData) {
-        wrapperData->m_func(wrapperData->m_data);
+        try {
+            wrapperData->m_func(wrapperData->m_data);
+        } catch (const char *msg) {
+            println(RED " !!! " NONE "Error: %s", msg);
+        }
     }
     delete wrapperData;
-    return NULL;
-}
+    return nullptr;
+} 
 
 ImplThread::ImplThread()
     : m_active(false)
@@ -83,7 +95,8 @@ ImplThread::~ImplThread() {
 // join thread
 void ImplThread::join()
 {
-    pthread_join(m_pthread, NULL);
+    if (m_active)  
+        pthread_join(m_pthread, NULL);
 }
 
 // check thread is executing something
@@ -199,7 +212,7 @@ void work(int ms)
 }
 
 // busy wait (microseconds);
-void nanowork(int us) 
+void uwork(int us) 
 {
     struct timeval tv_init, tv_next;
     gettimeofday(&tv_init, 0);
