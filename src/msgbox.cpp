@@ -10,20 +10,27 @@
 #include <cerrno>
 #include <cstdarg>
 struct ImplMbx {
+    // create message box
     ImplMbx(int id) : m_id(id) {
         pthread_mutex_init(&m_mutex, nullptr);
         pthread_cond_init(&m_empty, nullptr);
     }
+
+    // destroy message box
     ~ImplMbx() {
         pthread_mutex_destroy(&m_mutex);
         pthread_cond_destroy(&m_empty);
     }
+
+    // put a message in this message box
     void put(msg_t* msg) {
         pthread_mutex_lock(&m_mutex);
         m_messages.push(msg);
         pthread_cond_signal(&m_empty);
         pthread_mutex_unlock(&m_mutex);
     }
+
+    // get message from this message box or block if there are are none
     msg_t *get(int len = INF, int *st = nullptr) {
         pthread_mutex_lock(&m_mutex);
         if (st) {
@@ -60,13 +67,20 @@ private:
     std::queue<msg_t*> m_messages;
 };
 
+// all message boxes in the system
 struct AllBoxes {
+    // create message boxes
     AllBoxes() {
         pthread_mutex_init(&m_mutex, nullptr);
     }
+
+    // destroy
     ~AllBoxes() {
         pthread_mutex_destroy(&m_mutex);
     }
+
+    // get existing message box with `id` 
+    // create it if it doesn't exist
     ImplMbx* operator[](int id) {
         pthread_mutex_lock(&m_mutex);
         ImplMbx* result = m_boxes[id];
@@ -82,17 +96,20 @@ private:
     pthread_mutex_t m_mutex;
 } BOXES;
 
+// create message box
 mbx_t::mbx_t() 
     : m_id(rand())
 {
 }
 
+// create message box with id
 mbx_t::mbx_t(int id)
     : m_id(id)
 {
     // nothing
 }
 
+// create message box with name
 mbx_t::mbx_t(const char* name)
 {
     unsigned hash = 0;
@@ -101,11 +118,13 @@ mbx_t::mbx_t(const char* name)
     m_id = (int)hash;
 }
 
+// open message box with id
 mbx_t mbx_open(int id)
 {
     return mbx_t{id};
 }
 
+// open message box with name (can be formatted)
 mbx_t mbx_open(const char *fmt, ...) 
 {
     char buffer[BUFSIZ];
@@ -117,16 +136,19 @@ mbx_t mbx_open(const char *fmt, ...)
     return result;
 }
 
+// get message from message box
 void _mbx_get(msg_t **msg, mbx_t mbx, int len, int *st) 
 {
     *msg = BOXES[mbx.m_id]->get(len, st);
 }
 
+// put message in message box
 void _mbx_put(msg_t *msg, mbx_t mbx) 
 {
     BOXES[mbx.m_id]->put(msg);
 }
 
+// close message box
 void mbx_close(mbx_t& mbx)
 {
     mbx.m_id = -1;

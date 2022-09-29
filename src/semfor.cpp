@@ -1,6 +1,6 @@
 #include <semfor.h>
 
-// Semaphore implementation
+// semaphore implementation
 struct ImplSem {
     ImplSem();
     ImplSem(int val);
@@ -15,23 +15,27 @@ private:
     bool m_active;
 };
 
+// create uninitialized semaphore
 ImplSem::ImplSem()
     : m_active(false)
 {
     // nothing
 }
 
+// create initialized semaphore with value
 ImplSem::ImplSem(int val) 
     : m_active(true)
 {
     sem_init(&m_sem, 0, val);
 }
 
+// destructor (deinitialize semaphore)
 ImplSem::~ImplSem()
 {
     this->destroy();
 }
 
+// initialize an uninitialized semaphore
 void ImplSem::init(int val)
 {
     this->destroy();
@@ -39,13 +43,15 @@ void ImplSem::init(int val)
     m_active = true;
 }
 
+// wait semaphore
 void ImplSem::wait()
 {
     if (m_active) {
         sem_wait(&m_sem);
-    } 
-}
+    }  else throw "`wait()` called on an uninitialized semaphore!";
+} 
 
+// signal semaphore
 void ImplSem::signal()
 {
     if (m_active) {
@@ -53,6 +59,7 @@ void ImplSem::signal()
     } else throw "`signal()` called on an uninitialized semaphore!";
 }
 
+// deinitialize semaphore
 void ImplSem::destroy()
 {
     if (m_active) {
@@ -61,6 +68,7 @@ void ImplSem::destroy()
     } 
 }
 
+// check if semaphore is initialized
 bool ImplSem::active() const
 {
     return m_active;

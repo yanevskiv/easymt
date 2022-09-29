@@ -19,9 +19,6 @@ public:
     void rd (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
     bool rdp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
     void add_eval(std::function<void()>*);
-    void add_eval(std::function<int()>);
-    void add_eval(std::function<double()>);
-    void add_eval(std::function<const char *()>);
     void waitFor();
     void listp();
 };
@@ -341,18 +338,6 @@ void add_eval(std::function<void()> *f)
 {
     linda.add_eval(f);
 }
-//void add_eval(std::function<int()> f)
-//{
-//    linda.add_eval(f);
-//}
-//void add_eval(std::function<double()> f)
-//{
-//    linda.add_eval(f);
-//}
-//void add_eval(std::function<const char *()> f)
-//{
-//    linda.add_eval(f);
-//}
 
 #undef main
 extern int init();

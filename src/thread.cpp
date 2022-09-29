@@ -61,11 +61,14 @@ template <typename T> void *wrapper_data_func(void *data)
     return nullptr;
 } 
 
+// create uninitialized thread
 ImplThread::ImplThread()
     : m_active(false)
 {
+    // nothing
 }
 
+// create a thread and let it execute `void (*func)(void)`
 ImplThread::ImplThread(void (*func)(void))
     : m_active(true)
 {
@@ -77,6 +80,7 @@ ImplThread::ImplThread(void (*func)(void))
     );
 }
 
+// create a thread and let it execute `void (*func)(T)`
 template <typename T> ImplThread::ImplThread(void (*func)(T), const T& data)
     : m_active(true)
 {
@@ -88,8 +92,10 @@ template <typename T> ImplThread::ImplThread(void (*func)(T), const T& data)
     );
 }
 
-ImplThread::~ImplThread() {
-
+// destructor
+ImplThread::~ImplThread() 
+{
+    // nothing
 }
 
 // join thread
@@ -223,6 +229,7 @@ void uwork(int us)
     } while (true);
 }
 
+// sleep miliseconds
 void delay(int mili)
 {
     if (mili >= 0) {
@@ -230,6 +237,7 @@ void delay(int mili)
     }
 }
 
+// random milisecond sleep between two values
 void rand_delay(int max, int min)
 {
     if (max < 0) {
@@ -249,6 +257,7 @@ void rand_delay(int max, int min)
         delay(milis);
 }
 
+// random microsecond sleep between two values
 void rand_usleep(int max, int min)
 {
     max = (max < 0) ? 0 : max;

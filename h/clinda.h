@@ -39,19 +39,28 @@ struct LTP {
     bool equals(const LTP& ltp);
 };
 
-
+// remove a tuple and return true if successful (non-blocking)
 bool inp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+// remove a tuple and block if it doesn't exist in tuple space
 void in (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
-void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+// check if tuple exists and block if it doesn't 
 void rd (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+// check if tuple exists and return `true` if it does (non-blocking)
 bool rdp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+// add tuple into tuple space
+void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+// list tuples in the tuple space
 void listp();
 
+// add thread
 void add_eval(std::function<void()>*);
-void add_eval(std::function<int()>);
-void add_eval(std::function<double()>);
-void add_eval(std::function<const char *()>);
 
+// activate thread (lambda)
 #define eval(CODE) \
     do {\
         std::function<void()> *_f = new std::function<void()>([=](){ \
@@ -60,6 +69,7 @@ void add_eval(std::function<const char *()>);
         add_eval(_f);\
     } while (0)
 
+// internal main
 #define main init 
 
 #endif

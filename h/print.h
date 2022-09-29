@@ -6,17 +6,24 @@
 #define YELLOW    "\e[33m"
 #define BLUE      "\e[34m"
 #define MAGENTA   "\e[35m"
-#define CYAN      "\e[35m"
+#define CYAN      "\e[36m"
+#define GRAY      "\e[37m"
+#define BLACK     "\e[38m"
+
 #define BGRED     "\e[41m"
 #define BGGREEN   "\e[42m"
 #define BGYELLOW  "\e[43m"
 #define BGBLUE    "\e[44m"
 #define BGMAGENTA "\e[45m"
 #define BGCYAN    "\e[46m"
+#define BGGRAY    "\e[47m"
+#define BGBLACK   "\e[48m"
+
 #define REV       "\e[7m"
 #define NONE      "\e[0m"
 #define ENTER     "(---"
 #define EXIT      "---)"
+
 #define COLORN    "\e[%dm"
 
 #define println(...) \

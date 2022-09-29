@@ -10,19 +10,37 @@ struct cond;
 struct ImplMonitor;
 struct ImplCond;
 
-// condition
+// monitor condition
 struct cond {
-    // 
+    // constructor
     cond(Monitor *mon = nullptr);
 
+    // destructor
     ~cond();
-    bool empty();
-    int queue();
+
+    // wait on this condition
     void wait(int prio = 0);
+
+    // signal the next thread in the queue waiting on this condition
     void signal();
+
+    // signal every thread waiting on condition
+    // (note: only allowed in monitors using `Signal-And-Continue` discipline)
     void signalAll();
+
+    // same as above
     void signal_all();
+
+    // return the priority value of the first thread in the waiting queue
     int minrank();
+
+    // check if waiting queue is empty
+    bool empty();
+
+    // return how many threads are in the waiting queue
+    int queue();
+
+    // set monitor
     void set_monitor(Monitor*);
 private:
     ImplCond *m_impl;
@@ -41,7 +59,7 @@ protected:
 };
 
 // wait on condition 
-// if priority is omitted, FIFO is assumed
+// if priority argument is omitted FCFS is assumed
 void wait(cond&, int prio = 0);
 
 // signal a thread waiting on condition
@@ -55,9 +73,13 @@ void signalAll(cond&);
 // same as above
 void signal_all(cond&);
 
-//
+// return the priority value of the first thread in the waiting queue
 int minrank(cond&);
+
+// check if waiting queue is empty
 bool empty(cond&);
+
+// return how many threads are in the waiting queue
 int queue(cond&);
 
 

@@ -1,8 +1,3 @@
-# Easy multithreading
-Multithreading library based on POSIX threads that abstracts a lot of complexity and captures the essence of multithreading.
-
-# Example
-```c++
 // Compile with: g++ -pthread -Ih -Llib main.cpp -leasymt -o main
 // Run as:       ./main
 //
@@ -35,4 +30,4 @@ int main() {
     join(ta);
     join(tb);
 }
-```
+
