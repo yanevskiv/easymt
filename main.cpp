@@ -4,7 +4,7 @@
 // Expected result: ababababababab...
 
 #include <thread.h>
-#include <semfor.h>
+#include <sem.h>
 
 Sem sa = 1, sb = 0;
 

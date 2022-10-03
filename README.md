@@ -9,7 +9,7 @@ Multithreading library based on POSIX threads that abstracts a lot of complexity
 // Expected result: ababababababab...
 
 #include <thread.h>
-#include <semfor.h>
+#include <sem.h>
 
 Sem sa = 1, sb = 0;
 
@@ -34,5 +34,6 @@ int main() {
     Thread tb = createThread(b);
     join(ta);
     join(tb);
+    return 0;
 }
 ```

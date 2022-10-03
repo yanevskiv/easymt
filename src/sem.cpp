@@ -1,4 +1,4 @@
-#include <semfor.h>
+#include <sem.h>
 
 // semaphore implementation
 struct ImplSem {
