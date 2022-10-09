@@ -1,3 +1,4 @@
+// Author: Ivan Janevski
 #include <thread.h>
 #include <clinda.h>
 #include <cstring>
@@ -5,29 +6,57 @@
 #include <stdexcept>
 
 class Linda {
+    // threads created using `eval()`
     std::vector<pthread_t> m_eval;
+
+    // tuple space
     std::vector<LTP> m_data;
+
+    // tuple space mutex
     mutable pthread_mutex_t m_mutex;
+
+    // delay condition for `in()` and `rd()`
     mutable pthread_cond_t m_cond;
-    
+
 public:
+    // constructor
     Linda();
+
+    // destructor
     ~Linda();
+
+    // check if tuple exists in tuple space (remove it if it does)
     bool inp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+    // remove tuple from tuple space (block if it doesn't exist)
     void in (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
-    void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+    // block if tuple doesn't exist
     void rd (LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+    // check if tuple exists
     bool rdp(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+    // add a passive tuple into tuple space
+    void out(LT a = {}, LT b = {}, LT c = {}, LT d = {}, LT e = {}, LT f = {});
+
+    // create a thread 
     void add_eval(std::function<void()>*);
+
+    // join all threads
     void waitFor();
+
+    // print tuple space to stdout
     void listp();
 };
 
+// tuple fragment (no type)
 LT::LT() 
 {
     m_type = LT_NONE;
 }
 
+// tuple fragment (int)
 LT::LT(int x) 
 {
     m_type = LT_INT;
@@ -35,6 +64,7 @@ LT::LT(int x)
     m_isPtr = false;
 }
 
+// tuple fragment (double)
 LT::LT(double x) 
 {
     m_type = LT_DOUBLE;
@@ -42,6 +72,7 @@ LT::LT(double x)
     m_isPtr = false;
 }
 
+// tuple fragment (string)
 LT::LT(const char *x) 
 {
     m_type = LT_STRING;
@@ -49,6 +80,7 @@ LT::LT(const char *x)
     m_isPtr = false;
 }
 
+// tuple fragment (?int)
 LT::LT(int *x) 
 {
     m_type = LT_INT;
@@ -56,6 +88,7 @@ LT::LT(int *x)
     m_isPtr = true;
 }
 
+// tuple fragment (?double)
 LT::LT(double *x) 
 {
     m_type = LT_DOUBLE;
@@ -63,6 +96,7 @@ LT::LT(double *x)
     m_isPtr = true;
 }
 
+// tuple fragment (?string)
 LT::LT(const char **x) 
 {
     m_type = LT_STRING;
@@ -70,16 +104,19 @@ LT::LT(const char **x)
     m_isPtr = true;
 }
 
+// is template fragment (?type)
 bool LT::isPtr() const
 {
     return m_isPtr;
 }
 
+// tuple fragment type
 int LT::type() const
 {
     return m_type;
 }
 
+// populate template fragments with values
 void LT::assign(const LT& lt)
 {
     if (isPtr()) {
@@ -97,6 +134,7 @@ void LT::assign(const LT& lt)
     }
 }
 
+// check if tuple fragment is equal to another tuple fragment
 bool LT::equals(const LT& lt)
 {
     if (type() != lt.type())
@@ -120,18 +158,21 @@ bool LT::equals(const LT& lt)
     return false;
 }
 
-Linda::Linda() {
+// constructor
+Linda::Linda()
+{
     pthread_mutex_init(&m_mutex, NULL);
     pthread_cond_init(&m_cond, NULL);
 }
 
-Linda::~Linda() {
+// destructor
+Linda::~Linda()
+{
     pthread_mutex_destroy(&m_mutex);
     pthread_cond_destroy(&m_cond);
 }
 
-
-
+// tuple constructor
 LTP::LTP(LT a, LT b, LT c, LT d, LT e, LT f) 
 {
     m_data[0] = a;
@@ -142,6 +183,7 @@ LTP::LTP(LT a, LT b, LT c, LT d, LT e, LT f)
     m_data[5] = f;
 }
 
+// tuple assignment
 void LTP::assign(const LTP& ltp)
 {
     if (! equals(ltp))
@@ -151,6 +193,7 @@ void LTP::assign(const LTP& ltp)
     }
 }
 
+// check if two tuples are equal
 bool LTP::equals(const LTP& ltp)
 {
     for (int i = 0; i < LTP_MAX; i++) {
@@ -160,6 +203,7 @@ bool LTP::equals(const LTP& ltp)
     return true;
 }
 
+// remove tuple from tuple space (returns true if tuple was removed)
 bool Linda::inp(LT a, LT b, LT c, LT d, LT e, LT f) 
 {
     pthread_mutex_lock(&m_mutex);
@@ -177,6 +221,7 @@ bool Linda::inp(LT a, LT b, LT c, LT d, LT e, LT f)
     return found;
 }
 
+// remove tuple from tuple space (block if tuple doesn't exist)
 void Linda::in(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -198,6 +243,7 @@ void Linda::in(LT a, LT b, LT c, LT d, LT e, LT f)
     pthread_mutex_unlock(&m_mutex);
 }
 
+// put tuple into tuple space
 void Linda::out(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -207,6 +253,7 @@ void Linda::out(LT a, LT b, LT c, LT d, LT e, LT f)
     pthread_mutex_unlock(&m_mutex);
 }
 
+// block if tuple doesn't exist in tuple space
 void Linda::rd(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -227,6 +274,7 @@ void Linda::rd(LT a, LT b, LT c, LT d, LT e, LT f)
     pthread_mutex_unlock(&m_mutex);
 }
 
+// check if tuple exists in tuple space
 bool Linda::rdp(LT a, LT b, LT c, LT d, LT e, LT f)
 {
     pthread_mutex_lock(&m_mutex);
@@ -243,6 +291,7 @@ bool Linda::rdp(LT a, LT b, LT c, LT d, LT e, LT f)
     return found;
 }
 
+// print tuple space to `stdout`
 void Linda::listp()
 {
     pthread_mutex_lock(&m_mutex);
@@ -281,7 +330,7 @@ void Linda::listp()
     pthread_mutex_unlock(&m_mutex);
 }
 
-
+// create static tuple space
 static Linda linda;
 
 bool inp(LT a, LT b, LT c, LT d, LT e, LT f) 
@@ -309,6 +358,7 @@ void listp()
     linda.listp();
 }
 
+// add thread 
 void Linda::add_eval(std::function<void()> *f)
 {
     pthread_t p;
@@ -324,6 +374,7 @@ void Linda::add_eval(std::function<void()> *f)
     m_eval.push_back(p);
 }
 
+// join threads
 void Linda::waitFor()
 {
     for (int i = 0; i < m_eval.size(); i++) {
@@ -339,6 +390,8 @@ void add_eval(std::function<void()> *f)
     linda.add_eval(f);
 }
 
+// `main()` needed to be replaced becuase C-Linda uses `init()` instead
+// also, created threads need to be joined
 #undef main
 extern int init();
 int main() {

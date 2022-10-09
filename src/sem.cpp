@@ -17,9 +17,9 @@ private:
 
 // create uninitialized semaphore
 ImplSem::ImplSem()
-    : m_active(false)
+    : m_active(true)
 {
-    // nothing
+    sem_init(&m_sem, 0, 0);
 }
 
 // create initialized semaphore with value
@@ -88,8 +88,6 @@ Sem::Sem(int val)
 
 Sem::Sem(Sem&& sem)
 {
-    if (m_impl->active())
-        throw "`Sem(Sem&&)` called on an already initialized semaphore!";
     delete m_impl;
     m_impl = sem.m_impl;
     sem.m_impl = nullptr;
@@ -97,8 +95,6 @@ Sem::Sem(Sem&& sem)
 
 Sem& Sem::operator=(Sem&& sem)
 {
-    if (m_impl->active())
-        throw "`operator=(Sem&&)` called on an already initialized samaphore!";
     if (&sem != this) {
         delete m_impl;
         m_impl = sem.m_impl;

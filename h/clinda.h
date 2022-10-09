@@ -1,7 +1,9 @@
+// Author: Ivan Janevski
 #ifndef _CLINDA_H_
 #define _CLINDA_H_
 #include <functional>
 
+// tuple fragment types
 enum {
     LT_NONE,
     LT_INT,
@@ -9,6 +11,7 @@ enum {
     LT_STRING
 };
 
+// tuple fragment
 struct LT {
     bool m_isPtr;
     int m_type;
@@ -31,6 +34,7 @@ struct LT {
     bool equals(const LT&);
 };
 
+// tuple
 #define LTP_MAX 6
 struct LTP {
     LT m_data[LTP_MAX];
@@ -69,7 +73,7 @@ void add_eval(std::function<void()>*);
         add_eval(_f);\
     } while (0)
 
-// internal main
+// `main` function is replaced by `init` function
 #define main init 
 
 #endif

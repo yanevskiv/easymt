@@ -12,8 +12,11 @@ struct ImplCond;
 
 // monitor condition
 struct cond {
-    // constructor
-    cond(Monitor *mon = nullptr);
+    // constructor (monitor must be set later with cond::set_monitor(...))
+    cond();
+
+    // constructor with monitor argument
+    cond(Monitor *mon);
 
     // destructor
     ~cond();
@@ -59,7 +62,7 @@ protected:
 };
 
 // wait on condition 
-// if priority argument is omitted FCFS is assumed
+// if priority argument is omitted FCFS (FIFO) is assumed
 void wait(cond&, int prio = 0);
 
 // signal a thread waiting on condition
@@ -90,14 +93,14 @@ struct SC_Monitor : Monitor {
     }
 };
 
-// Signal-And-Wait monitor
+// Signal-And-Wait monitor (SUW by default)
 struct SW_Monitor : Monitor {
     SW_Monitor() : Monitor(SW) {
     
     }
 };
 
-// Signal-And-Urgent-Wait monitor
+// Signal-And-Urgent-Wait monitor (not implemented)
 struct SUW_Monitor : Monitor {
     SUW_Monitor() : Monitor(SUW) {
     
@@ -125,8 +128,7 @@ protected:
     Monitor *m_monitor;
 };
 
-// monitor block
-// (same as `syncrhonized (this)` in other languages)
+// monitor block (must be used  
 #define monitor \
     for (RAII_MONITOR_LOCK _m_lock(this);_m_lock.checkOnce();)
 
