@@ -1,4 +1,3 @@
-// Author: Ivan Janevski
 #include <thread.h>
 #include <clinda.h>
 #include <cstring>
@@ -391,7 +390,7 @@ void add_eval(std::function<void()> *f)
 }
 
 // `main()` needed to be replaced becuase C-Linda uses `init()` instead
-// also, created threads need to be joined
+// (created threads have to be joined at exit)
 #undef main
 extern int init();
 int main() {

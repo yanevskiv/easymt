@@ -48,5 +48,4 @@
         fflush(stdout); \
     } while (0)
 
-
 #endif

@@ -1,4 +1,3 @@
-// Author: Ivan Janevski
 #ifndef _CLINDA_H_
 #define _CLINDA_H_
 #include <functional>
@@ -73,7 +72,6 @@ void add_eval(std::function<void()>*);
         add_eval(_f);\
     } while (0)
 
-// `main` function is replaced by `init` function
+// `main` is replaced by `init` in Linda
 #define main init 
-
 #endif

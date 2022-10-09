@@ -1,4 +1,4 @@
-// Compile with: g++ -pthread -Ih -Llib main.cpp -leasymt -o main
+// Compile with: g++ -pthread -Iinclude -Llib main.cpp -leasymt -o main
 // Run as:       ./main
 //
 // Expected result: ababababababab...

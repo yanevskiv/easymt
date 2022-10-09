@@ -1,14 +1,27 @@
 #include <region.h>
 #include <pthread.h>
 
+// region implementation
 struct ImplRegion {
+    // constructor
     ImplRegion();
+
+    // destructor
     ~ImplRegion();
+
+    // wait for condition to become true
     void wait();
+
+    // enter region
     void lock();
+
+    // exit region
     void unlock();
 private:
+    // mutex
     pthread_mutex_t m_mutex;
+
+    // condition
     pthread_cond_t m_cond;
 };
 
@@ -46,7 +59,9 @@ void ImplRegion::wait()
     pthread_cond_wait(&m_cond, &m_mutex);
 }
 
-
+/* 
+ * Region
+ */
 Region::Region() 
     : m_impl(new ImplRegion)
 {
@@ -60,15 +75,15 @@ Region::~Region()
 
 void Region::lock() 
 {
-    this->m_impl->lock();
+    m_impl->lock();
 }
 
 void Region::unlock()
 {
-    this->m_impl->unlock();
+    m_impl->unlock();
 }
 
 void Region::wait()
 {
-    this->m_impl->wait();
+    m_impl->wait();
 }

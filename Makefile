@@ -3,7 +3,7 @@ CC     = g++
 CFLAGS = -fdiagnostics-color=always -O2
 ODIR   = obj
 SDIR   = src
-INCDIR = -Ih
+INCDIR = -Iinclude
 LIBDIR = -Llib
 LIBS   = -leasymt
 

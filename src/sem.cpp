@@ -74,6 +74,9 @@ bool ImplSem::active() const
     return m_active;
 }
 
+/* 
+ * Semaphore
+ */
 Sem::Sem() 
     : m_impl(new ImplSem)
 {
@@ -132,6 +135,9 @@ void Sem::destroy()
     m_impl->destroy();
 }
 
+/* 
+ * Procedual-style semaphore operations
+ */
 void init(Sem& sem, int val)
 {
     sem.init(val);

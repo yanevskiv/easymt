@@ -9,6 +9,8 @@
 #include <ctime>
 #include <cerrno>
 #include <cstdarg>
+
+// message box implementation
 struct ImplMbx {
     // create message box
     ImplMbx(int id) : m_id(id) {
@@ -61,20 +63,27 @@ struct ImplMbx {
         return result;
     }
 private:
+    // unique identifier
     int m_id;
+
+    // block condition if message box is empty
     pthread_cond_t m_empty;
+
+    // mutex
     pthread_mutex_t m_mutex;
+
+    // message queue
     std::queue<msg_t*> m_messages;
 };
 
-// all message boxes in the system
+// all message boxes
 struct AllBoxes {
-    // create message boxes
+    // constructor
     AllBoxes() {
         pthread_mutex_init(&m_mutex, nullptr);
     }
 
-    // destroy
+    // destructor
     ~AllBoxes() {
         pthread_mutex_destroy(&m_mutex);
     }
@@ -92,9 +101,15 @@ struct AllBoxes {
         return result;
     }
 private:
+    // map of `id -> message box`
     std::unordered_map<int, ImplMbx*> m_boxes;
+
+    // mutex
     pthread_mutex_t m_mutex;
-} BOXES;
+};
+
+// global message boxes
+static AllBoxes BOXES;
 
 // create message box
 mbx_t::mbx_t() 
