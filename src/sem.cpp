@@ -1,3 +1,4 @@
+// (c) Ivan Janevski
 #include <sem.h>
 
 // semaphore implementation

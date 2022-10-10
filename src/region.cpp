@@ -1,3 +1,4 @@
+// (c) Ivan Janevski
 #include <region.h>
 #include <pthread.h>
 

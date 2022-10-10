@@ -1,3 +1,4 @@
+// (c) Ivan Janevski
 #include <msgbox.h>
 #include <map>
 #include <queue>

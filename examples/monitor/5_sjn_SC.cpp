@@ -1,3 +1,4 @@
+// (c) Ivan Janevski
 #include <thread.h>
 #include <stdlib.h>
 #include <monitor.h>

@@ -1,3 +1,4 @@
+// (c) Ivan Janevski
 #include <thread.h>
 #include <monitor.h>
 #define N 5
