@@ -1,0 +1,22 @@
+Examples available
+
+Spinlock
+ 1. [x] Test-And-Set
+ 2. [x] Test-And-Test-And-Set
+ 3. [x] Peterson's algorithm
+ 4. [x] Ticket algorithm
+ 5. [x] Anderson's algorithm
+ 6. [x] Bakery algorithm
+ 7. [x] CLH algorithm
+
+    Sem Reg Mon
+ 1. [x] [x] [x] Simple syncrhonization
+ 2. [x] [x] [x] Mutual exclusion
+ 3. [x] [x] [x] Producers and Consumers
+ 4. [x] [x] [x] Barrier synchronization
+ 5. [x] [x] [x] Readers and Writers
+ 6. [x] [x] [x] Shortest Job Next
+ 7. [x] [x] [x] Dining Philosophers
+ 8. [x] [x] [x] Cigarette Smokers
+ 9. [x] [x] [x] Sleeping Barber Problem
+

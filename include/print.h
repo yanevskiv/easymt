@@ -21,8 +21,6 @@
 
 #define REV       "\e[7m"
 #define NONE      "\e[0m"
-#define ENTER     "(---"
-#define EXIT      "---)"
 
 #define COLORN    "\e[%dm"
 
