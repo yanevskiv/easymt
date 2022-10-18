@@ -1,6 +1,7 @@
 #ifndef _CLINDA_H_
 #define _CLINDA_H_
 #include <functional>
+#include <process.h>
 
 // tuple fragment types
 enum {
