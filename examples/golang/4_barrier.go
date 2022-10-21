@@ -1,3 +1,6 @@
+/**
+ * (c) Ivan Janevski
+ */
 package main
 
 import ( 

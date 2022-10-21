@@ -1,3 +1,6 @@
+/**
+ * (c) Ivan Janevski
+ */
 package main
 
 import (
@@ -9,6 +12,7 @@ import (
 const N = 5
 
 // channels
+var ticket chan bool
 var forks [N]chan bool
 
 // routines
@@ -20,19 +24,16 @@ func phil(id int, done chan bool) {
         fmt.Println("Philosopher", id, "is thinking")
         time.Sleep(time.Microsecond)
         // Acquire forks
-        if id % 2 == 0 {
-            <- forks[left]
-            <- forks[right]
-        } else {
-            <- forks[right]
-            <- forks[left]
-        }
+        <- ticket
+        <- forks[left]
+        <- forks[right]
         // Eat
         fmt.Println("Philosopher", id, "is eating")
         time.Sleep(time.Microsecond)
         // Release forks
         forks[left] <- true
         forks[right] <- true
+        ticket <- true
     }
     done <- true
 }
@@ -40,9 +41,13 @@ func phil(id int, done chan bool) {
 func main() {
     // init channels
     done := make(chan bool, 1)
+    ticket = make(chan bool, N - 1)
     for i := 0; i < N; i++ {
         forks[i] = make(chan bool, 1)
         forks[i] <- true
+        if i < N - 1 {
+            ticket <- true
+        }
     }
 
     // run

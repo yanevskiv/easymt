@@ -1,3 +1,6 @@
+/**
+ * (c) Ivan Janevski
+ */
 #include <thread.h>
 #include <print.h>
 #include <clinda.h>

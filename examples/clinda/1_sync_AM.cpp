@@ -1,3 +1,6 @@
+/**
+ * (c) Ivan Janevski
+ */
 #include <process.h>
 #include <clinda.h>
 #define OTHER_ID(id) (id == ID_A ? ID_B : ID_A)

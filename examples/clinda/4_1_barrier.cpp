@@ -1,3 +1,6 @@
+/**
+ * (c) Ivan Janevski
+ */
 #include <thread.h>
 #include <clinda.h>
 #define N 5
