@@ -1,3 +1,6 @@
 examples/main.cpp
 examples/main
 examples/a.out
+obj/*
+lib/libeasymt.a
+main
