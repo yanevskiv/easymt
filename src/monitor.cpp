@@ -210,7 +210,7 @@ void ImplCond::signal()
         PrioSem* sem = m_queue.top();
         m_queue.pop();
         sem->signal();
-        if (m_monitor->disc() == SUW && wsem != nullptr) {
+        if (m_monitor->disc() == SW && wsem != nullptr) {
             wsem->wait();
         }
     }
