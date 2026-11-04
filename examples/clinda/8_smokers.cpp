@@ -4,66 +4,34 @@
 #include <print.h>
 #include <clinda.h>
 #include <stdlib.h>
+#define ITEM_COUNT 3
+
 enum {
     PAPER,
     TOBACCO,
     MATCHES,
 };
 
+const char *NAMES[ITEM_COUNT] = { "PAPER", "TOBACCO", "MATCHES" };
+
 void agent() {
     while (true) {
-        int item = rand() % 3;
-        switch (item) {
-            case PAPER: {
-                println(RED "Agent putting TOBACCO and MATCHES");
-                out("tobacco");
-                out("matches");
-                out("wait(Matches, Tobacco)");
-                in("ok");
-            } break;
-            case TOBACCO: {
-                println(YELLOW "Agent putting PAPER and MATCHES");
-                out("paper");
-                out("matches");
-                out("wait(Paper, Matches)");
-                in("ok");
-            } break;
-            case MATCHES: {
-                println(GREEN "Agent putting TOBACCO and PAPER");
-                out("tobacco");
-                out("matches");
-                out("wait(Tobacco, Paper)");
-                in("ok");
-            } break;
-        }
+        int notItem = rand() % ITEM_COUNT;
+        int item1 = (notItem + 1) % ITEM_COUNT;
+        int item2 = (notItem + 2) % ITEM_COUNT;
+        println(RED "Agent putting %s and %s", NAMES[item1], NAMES[item2]);
+        out("table", item1, item2);
+        in("ok");
     }
 }
 
-void smoker(int item)  {
+void smoker(int hasItem) {
+    int item1 = (hasItem + 1) % ITEM_COUNT;
+    int item2 = (hasItem + 2) % ITEM_COUNT;
     while (true) {
-        switch (item) {
-            case PAPER: {
-                out("wait(Matches, Tobacco)");
-                in("matches");
-                in("tobacco");
-                println(RED "Smoker taking TOBACCO and MATCHES");
-                out("ok");
-            } break;
-            case TOBACCO: {
-                out("wait(Paper, Matches)");
-                in("paper");
-                in("matches");
-                println(YELLOW "Smoker taking PAPER and MATCHES");
-                out("ok");
-            } break;
-            case MATCHES: {
-                out("wait(Tobacco, Paper)");
-                in("tobacco");
-                in("paper");
-                println(GREEN "Smoker taking TOBACCO and PAPER");
-                out("ok");
-            } break;
-        }
+        in("table", item1, item2);
+        println(GREEN "Smoker with %s taking %s and %s", NAMES[hasItem], NAMES[item1], NAMES[item2]);
+        out("ok");
     }
 }
 

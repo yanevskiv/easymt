@@ -4,71 +4,61 @@
 #include <print.h>
 #include <clinda.h>
 #define N 5
-#define LEFT_OF(n) (n)
-#define RIGHT_OF(n) ((n + 1) % N)
+#define LEFT(id) (((id) + N - 1) % N)
+#define RIGHT(id) (((id) + 1) % N)
 
 enum {
     ACQUIRE,
     RELEASE
 };
 
+void test(int id, bool forkFree[], bool hungry[]) {
+    if (hungry[id] && forkFree[id] && forkFree[RIGHT(id)]) {
+        hungry[id] = false;
+        forkFree[id] = false;
+        forkFree[RIGHT(id)] = false;
+        out("response", id);
+    }
+}
+
 void server() {
-    bool isAvail[N] = { true, true, true, true, true };
-    bool isHungry[N] = { false, false, false, false, false };
+    bool forkFree[N] = { true, true, true, true, true };
+    bool hungry[N] = { false, false, false, false, false };
     while (true) {
-        int action, id, left, right;
-        in("request", &action, &id, &left, &right);
-        switch (action) {
-            case ACQUIRE: {
-                if (isAvail[left] && isAvail[right]) {
-                    isAvail[left] = false;
-                    isAvail[right] = false;
-                    out("response", id);
-                } else {
-                    isHungry[id] = true;
-                }
-            } break;
-            case RELEASE: {
-                isAvail[left] = true;
-                isAvail[right] = true;
-                if (isHungry[left] && isAvail[LEFT_OF(left)] && isAvail[RIGHT_OF(left)]) {
-                    isHungry[left] = false;
-                    isAvail[LEFT_OF(left)] = false;
-                    isAvail[RIGHT_OF(left)] = false;
-                    out("response", left);
-                } else if (isHungry[right] && isAvail[LEFT_OF(right)] && isAvail[RIGHT_OF(right)]) {
-                    isHungry[right] = false;
-                    isAvail[LEFT_OF(left)] = false;
-                    isAvail[RIGHT_OF(left)] = false;
-                    out("response", right);
-                }
-                out("response", id);
-            } break;
+        int id, action;
+        in("request", &id, &action);
+        if (action == ACQUIRE) {
+            hungry[id] = true;
+            test(id, forkFree, hungry);
+        } else {
+            forkFree[id] = true;
+            forkFree[RIGHT(id)] = true;
+            out("response", id);
+            test(LEFT(id), forkFree, hungry);
+            test(RIGHT(id), forkFree, hungry);
         }
     }
 }
 
 void phil(int id) {
-    int left = LEFT_OF(id);
-    int right = RIGHT_OF(id);
     while (true) {
         // Think
         println("Thinking %d", id);
         usleep(10);
         // Acquire forks
-        out("request", ACQUIRE, id, left, right);
+        out("request", id, ACQUIRE);
         in("response", id);
         // Eating
         println("Eating %d", id);
         usleep(10);
         // Release forks
-        out("request", RELEASE, id, left, right);
+        out("request", id, RELEASE);
         in("response", id);
     }
 }
 
 void init() {
     eval(server());
-    for (int i = 0; i < N; i++) 
+    for (int i = 0; i < N; i++)
         eval(phil(i));
 }

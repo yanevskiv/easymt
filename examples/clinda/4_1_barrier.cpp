@@ -22,6 +22,7 @@ void a(int id) {
         }
         in("door2");
         print("\e[7m\e[%dm %d ", 30 + id, id);
+        in("count", &count);
         if (count + 1 == N) {
             out("count", 0);
             out("door1");

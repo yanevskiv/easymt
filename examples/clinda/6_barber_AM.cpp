@@ -5,72 +5,84 @@
 #include <clinda.h>
 #include <queue>
 #define N 15
-#define BARBER_ID (N + 1)
+#define BARBER_ID N
 #define MAX_SEATS 5
+#define SHOP_PRICE 400
+
 enum {
-    INVALID = -1,
-    BARB_ENTER,
-    CUST_ENTER,
+    ENTER,
+    NEXT,
+    DONE,
+    PAY
 };
 
 void server() {
-    std::queue<int> qCustomers, qBarbers;
+    std::queue<int> seats;
+    bool barberWaiting = false;
     while (true) {
-        int action, id;
-        in("request", &action, &id);
-        switch (action)  {
-            case CUST_ENTER: {
-                if (qCustomers.size() >= MAX_SEATS) {
-                    out("response", id, INVALID);
-                } else if (qCustomers.size() > 0 || qBarbers.size() == 0) {
-                    qCustomers.push(id);
-                } else {
-                    int barbId = qBarbers.front();
-                    qBarbers.pop();
-                    out("response", id, barbId);
-                    out("response", barbId, id);
-                } 
+        int id, action, arg;
+        in("request", &id, &action, &arg);
+        switch (action) {
+            case ENTER: {
+                if (seats.size() >= MAX_SEATS)
+                    out("response", id, 0);
+                else
+                    seats.push(id);
             } break;
-            case BARB_ENTER: {
-                if (qCustomers.size() > 0 && qBarbers.size() == 0) {
-                    int custId = qCustomers.front();
-                    qCustomers.pop();
-                    out("response", id, custId);
-                    out("response", custId, id);
-                } else {
-                    qBarbers.push(id);
-                }
+            case NEXT: {
+                barberWaiting = true;
             } break;
+            case DONE: {
+                out("response", arg, 1);
+            } break;
+            case PAY: {
+                out("response", id, 1);
+                out("response", BARBER_ID, arg);
+            } break;
+        }
+        if (barberWaiting && ! seats.empty()) {
+            int custId = seats.front();
+            seats.pop();
+            barberWaiting = false;
+            out("response", custId, 1);
+            out("response", BARBER_ID, custId);
         }
     }
 }
 
-void barber(int id) {
-    int custId = INVALID;
+void barber() {
+    int totalMoney = 0;
     while (true) {
-        out("request", BARB_ENTER, id);
-        in("response", id, &custId);
+        int custId, money;
+        out("request", BARBER_ID, NEXT, 0);
+        in("response", BARBER_ID, &custId);
         println(GREEN "Cutting hair of %d", custId);
         /* cutting hair */
+        out("request", BARBER_ID, DONE, custId);
+        in("response", BARBER_ID, &money);
+        totalMoney += money;
+        println(RED "Got paid %d (total %d)", money, totalMoney);
     }
 }
 
 void customer(int id) {
-    int barbId = INVALID;
     while (true) {
-        out("request", CUST_ENTER, id);
-        in("response", id, &barbId);
-        if (barbId != INVALID) {
-            /* cutting hair */
-            println(YELLOW "Getting hair cut from %d", barbId);
+        int ok;
+        out("request", id, ENTER, 0);
+        in("response", id, &ok);
+        if (ok) {
+            in("response", id, &ok);
+            println(YELLOW "%d paying for the haircut", id);
+            out("request", id, PAY, SHOP_PRICE);
+            in("response", id, &ok);
         }
+        usleep(100);
     }
 }
 
-
 void init() {
-    eval(barber(BARBER_ID));
     eval(server());
-    for (int i = 0; i < N; i++) 
+    eval(barber());
+    for (int i = 0; i < N; i++)
         eval(customer(i));
 }
