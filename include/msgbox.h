@@ -11,10 +11,10 @@
 #define SUCCESS 1
 
 // waiting for message
-#define UNKNOWN 0
+#define UNKNOWN -1
 
 // timeout on `msg_get`
-#define EXPIRED -1
+#define EXPIRED 0
 
 struct msg_t;
 struct mbx_t {
@@ -36,6 +36,9 @@ void  _mbx_put(msg_t *msg, mbx_t mbx);
 
 // get message from message box
 void  _mbx_get(msg_t **msg, mbx_t mbx, int len = INF, int* st = nullptr);
+
+// open message box with id
+mbx_t mbx_open(int);
 
 // open message box with name
 mbx_t mbx_open(const char *, ...);

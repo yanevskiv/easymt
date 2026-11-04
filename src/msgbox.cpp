@@ -10,6 +10,7 @@
 #include <ctime>
 #include <cerrno>
 #include <cstdarg>
+#include <atomic>
 
 // message box implementation
 struct ImplMbx {
@@ -39,20 +40,27 @@ struct ImplMbx {
         if (st) {
             *st = UNKNOWN;
         }
+        struct timespec deadline;
+        if (len > 0) {
+            clock_gettime(CLOCK_REALTIME, &deadline);
+            deadline.tv_sec += len / 1000;
+            deadline.tv_nsec += (long)(len % 1000) * 1000000;
+            if (deadline.tv_nsec >= 1000000000) {
+                deadline.tv_sec += 1;
+                deadline.tv_nsec -= 1000000000;
+            }
+        }
         while (m_messages.empty())  {
-            if (len == INF) {
+            if (len < 0) {
                 pthread_cond_wait(&m_empty, &m_mutex);
-            } else if (len >= 0) {
-                struct timespec abstime;
-                abstime.tv_sec = len / 1000;
-                abstime.tv_nsec = len * 1000;
-                if (pthread_cond_timedwait(&m_empty, &m_mutex, &abstime) == ETIMEDOUT) {
-                    pthread_mutex_unlock(&m_mutex);
-                    if (st) {
-                        *st = EXPIRED;
-                    }
-                    return nullptr;
+            } else if (len == 0 || pthread_cond_timedwait(&m_empty, &m_mutex, &deadline) == ETIMEDOUT) {
+                if (! m_messages.empty())
+                    break;
+                pthread_mutex_unlock(&m_mutex);
+                if (st) {
+                    *st = EXPIRED;
                 }
+                return nullptr;
             }
         }
         if (st) {
@@ -114,8 +122,9 @@ static AllBoxes BOXES;
 
 // create message box
 mbx_t::mbx_t() 
-    : m_id(rand())
 {
+    static std::atomic<int> nextId{-2};
+    m_id = nextId--;
 }
 
 // create message box with id
