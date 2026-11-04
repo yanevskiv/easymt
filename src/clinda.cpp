@@ -9,6 +9,8 @@ class Linda {
     // threads created using `eval()`
     std::vector<pthread_t> m_eval;
 
+    pthread_mutex_t m_evalMutex;
+
     // tuple space
     std::vector<LTP> m_data;
 
@@ -54,6 +56,8 @@ public:
 LT::LT() 
 {
     m_type = LT_NONE;
+    m_data.m_ptr = nullptr;
+    m_isPtr = false;
 }
 
 // tuple fragment (int)
@@ -162,6 +166,7 @@ bool LT::equals(const LT& lt)
 Linda::Linda()
 {
     pthread_mutex_init(&m_mutex, NULL);
+    pthread_mutex_init(&m_evalMutex, NULL);
     pthread_cond_init(&m_cond, NULL);
 }
 
@@ -169,6 +174,7 @@ Linda::Linda()
 Linda::~Linda()
 {
     pthread_mutex_destroy(&m_mutex);
+    pthread_mutex_destroy(&m_evalMutex);
     pthread_cond_destroy(&m_cond);
 }
 
@@ -371,15 +377,24 @@ void Linda::add_eval(std::function<void()> *f)
         }
         return data;
     }, f);
+    pthread_mutex_lock(&m_evalMutex);
     m_eval.push_back(p);
+    pthread_mutex_unlock(&m_evalMutex);
 }
 
 // join threads
 void Linda::waitFor()
 {
-    for (int i = 0; i < m_eval.size(); i++) {
+    for (int i = 0; ; i++) {
+        pthread_mutex_lock(&m_evalMutex);
+        if (i >= (int)m_eval.size()) {
+            pthread_mutex_unlock(&m_evalMutex);
+            break;
+        }
+        pthread_t thread = m_eval[i];
+        pthread_mutex_unlock(&m_evalMutex);
         std::function<void()> *p = nullptr;
-        pthread_join(m_eval[i], (void**)&p);
+        pthread_join(thread, (void**)&p);
         delete p;
     }
 }
@@ -393,7 +408,6 @@ void add_eval(std::function<void()> *f)
 // `main()` needed to be replaced becuase C-Linda uses `init()` instead
 // (created threads have to be joined at exit)
 #undef main
-extern int init();
 int main() {
     try {
         init();

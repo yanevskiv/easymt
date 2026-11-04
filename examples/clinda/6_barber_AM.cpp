@@ -68,10 +68,9 @@ void customer(int id) {
 }
 
 
-int main() {
+void init() {
     eval(barber(BARBER_ID));
     eval(server());
     for (int i = 0; i < N; i++) 
         eval(customer(i));
-    return 0;
 }

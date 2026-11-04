@@ -74,5 +74,6 @@ void add_eval(std::function<void()>*);
     } while (0)
 
 // `main` is replaced by `init` in Linda
+void init();
 #define main init 
 #endif

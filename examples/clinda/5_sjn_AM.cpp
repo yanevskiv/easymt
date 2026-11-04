@@ -55,9 +55,8 @@ void a(int id) {
 }
 
 
-int main() {
+void init() {
     eval(server());
     for (int i = 0; i < N; i++) 
         eval(a(i));
-    return 0;
 }

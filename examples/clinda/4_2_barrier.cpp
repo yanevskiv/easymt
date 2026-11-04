@@ -32,12 +32,11 @@ void a(int id) {
 }
 
 
-int main() {
+void init() {
     out("mutex", "bar1");
     out("mutex", "bar2");
     out("count", "bar1", 0);
     out("count", "bar2", 0);
     for (int i = 0; i < N; i++) 
         eval(a(i));
-    return 0;
 }

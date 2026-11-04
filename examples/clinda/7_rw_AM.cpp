@@ -102,11 +102,10 @@ void writer(int id) {
     }
 }
 
-int main() {
+void init() {
     eval(server());
     for (int i = 0; i < NR; i++) 
         eval(reader(i));
     for (int i = 0; i < NW; i++) 
         eval(writer(NR + i));
-    return 0;
 }

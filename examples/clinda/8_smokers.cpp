@@ -67,10 +67,9 @@ void smoker(int item)  {
     }
 }
 
-int main() {
+void init() {
     eval(agent());
     eval(smoker(PAPER));
     eval(smoker(TOBACCO));
     eval(smoker(MATCHES));
-    return 0;
 }

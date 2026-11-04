@@ -33,10 +33,9 @@ void a(int id) {
 }
 
 
-int main() {
+void init() {
     out("door1");
     out("count", 0);
     for (int i = 0; i < N; i++) 
         eval(a(i));
-    return 0;
 }
