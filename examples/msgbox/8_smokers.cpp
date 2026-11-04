@@ -22,21 +22,21 @@ void agent() {
         int item = rand() % 3;
         switch (item) {
             case MATCHES: {
-                println(RED "Agnet puts PAPER and TOBACCO");
+                println(RED "Agent puts PAPER and TOBACCO");
                 snd.m_item1 = PAPER;
                 snd.m_item2 = TOBACCO;
                 mbx_put(snd, boxMatches);
                 mbx_get(rcv, boxOk, INF, &st);
             } break;
             case PAPER: {
-                println(YELLOW "Agnet puts TOBACCO and MATCHES");
+                println(YELLOW "Agent puts TOBACCO and MATCHES");
                 snd.m_item1 = TOBACCO;
                 snd.m_item2 = MATCHES;
                 mbx_put(snd, boxPaper);
                 mbx_get(rcv, boxOk, INF, &st);
             } break;
             case TOBACCO: {
-                println(GREEN "Agnet puts MATCHES and PAPER");
+                println(GREEN "Agent puts MATCHES and PAPER");
                 snd.m_item1 = MATCHES;
                 snd.m_item2 = PAPER;
                 mbx_put(snd, boxTobacco);

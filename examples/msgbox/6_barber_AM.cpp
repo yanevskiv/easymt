@@ -5,6 +5,7 @@
 #define NC 15
 #define NB 1
 #define MAX_SEATS 5
+#define SHOP_PRICE 400
 
 enum {
     INVALID = -1,
@@ -15,6 +16,7 @@ enum {
 struct msg_t {
     int m_id;
     int m_action;
+    int m_money;
 };
 
 mbx_t privb[NB];
@@ -38,10 +40,10 @@ void server() {
                 } else if (qCustomers.empty() && qBarbers.size() > 0)  {
                     int barbId = qBarbers.front();
                     qBarbers.pop();
-                    snd.m_id = id;
-                    msg_put(snd, privb[barbId]);
                     snd.m_id = barbId;
                     msg_put(snd, privc[id]);
+                    snd.m_id = id;
+                    msg_put(snd, privb[barbId]);
                 } else {
                     qCustomers.push(id);
                 }
@@ -50,10 +52,10 @@ void server() {
                 if (qBarbers.empty() && qCustomers.size() > 0) {
                     int custId = qCustomers.front();
                     qCustomers.pop();
-                    snd.m_id = custId;
-                    msg_put(snd, privb[id]);
                     snd.m_id = id;
                     msg_put(snd, privc[custId]);
+                    snd.m_id = custId;
+                    msg_put(snd, privb[id]);
                 } else {
                     qBarbers.push(id);
                 }
@@ -64,6 +66,7 @@ void server() {
 
 void barber(int id) {
     int custId = INVALID;
+    int totalMoney = 0;
     int st;
     msg_t snd, rcv;
     while (true) {
@@ -73,6 +76,11 @@ void barber(int id) {
         mbx_get(rcv, privb[id], INF, &st);
         custId = rcv.m_id;
         println(RED "I'm barber %d and cutting hair of %d", id, custId);
+        snd.m_id = id;
+        mbx_put(snd, privc[custId]);
+        mbx_get(rcv, privb[id], INF, &st);
+        totalMoney += rcv.m_money;
+        println(RED "I'm barber %d and got paid %d by %d (total %d)", id, rcv.m_money, rcv.m_id, totalMoney);
     }
 }
 
@@ -89,6 +97,10 @@ void customer(int id) {
         if (barbId != INVALID) {
             /* CUT HAIR */
             println(YELLOW "I'm customer %d and getting haircut from %d", id, barbId);
+            mbx_get(rcv, privc[id], INF, &st);
+            snd.m_id = id;
+            snd.m_money = SHOP_PRICE;
+            mbx_put(snd, privb[barbId]);
         }
     }
 }

@@ -22,7 +22,7 @@ void b() {
     msg_t msg;
     while (true) {
         mbx_get(msg, mb, INF, &st);
-        print(RED "a");
+        print(RED "b");
         mbx_put(msg, ma);
     }
 }

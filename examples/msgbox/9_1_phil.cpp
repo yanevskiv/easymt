@@ -1,7 +1,6 @@
 #include <process.h>
 #include <msgbox.h>
 #define N 5
-#define LEFT(n) ((n) == 0 ? N - 1 : (n) - 1)
 #define RIGHT(n) (((n) + 1) % N)
 
 struct msg_t {
@@ -13,7 +12,7 @@ mbx_t forks[N];
 void phil(int id) {
     int st;
     msg_t empty;
-    int left = LEFT(id);
+    int left = id;
     int right = RIGHT(id);
     while (true) {
         // Think

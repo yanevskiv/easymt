@@ -1,7 +1,7 @@
 #include <process.h>
 #include <msgbox.h>
 #define N 5
-#define LEFT(n) ((n) == 0 ? N - 1 : (n) - 1)
+#define LEFT(n) (((n) + N - 1) % N)
 #define RIGHT(n) (((n) + 1) % N)
 
 enum {
@@ -14,10 +14,18 @@ struct msg_t {
     int m_action;
 };
 
-
 mbx_t privp[N];
 mbx_t privs;
 
+void test(int id, bool isAvail[], bool isHungry[]) {
+    msg_t snd;
+    if (isHungry[id] && isAvail[id] && isAvail[RIGHT(id)]) {
+        isHungry[id] = false;
+        isAvail[id] = false;
+        isAvail[RIGHT(id)] = false;
+        mbx_put(snd, privp[id]);
+    }
+}
 
 void server() {
     int st;
@@ -28,33 +36,17 @@ void server() {
         mbx_get(rcv, privs, INF, &st);
         int id = rcv.m_id;
         int action = rcv.m_action;
-        int left = LEFT(id);
-        int right = RIGHT(id);
         switch (action) {
             case ACQUIRE_FORKS: {
-                if (isAvail[left] && isAvail[right]) {
-                    isAvail[left] = false;
-                    isAvail[right] = false;
-                    mbx_put(snd, privp[id]);
-                } else {
-                    isHungry[id] = true;
-                }
+                isHungry[id] = true;
+                test(id, isAvail, isHungry);
             } break;
             case RELEASE_FORKS: {
-                isAvail[left] = true;
-                isAvail[right] = true;
-                if (isHungry[left] && isAvail[LEFT(left)] && isAvail[RIGHT(left)]) {
-                    isHungry[left] = false;
-                    isAvail[LEFT(left)] = false;
-                    isAvail[RIGHT(left)] = false;
-                    mbx_put(snd, privp[left]);
-                } else if (isHungry[right] && isAvail[LEFT(right)] && isAvail[RIGHT(right)]) {
-                    isHungry[right] = false;
-                    isAvail[LEFT(right)] = false;
-                    isAvail[RIGHT(right)] = false;
-                    mbx_put(snd, privp[right]);
-                }
+                isAvail[id] = true;
+                isAvail[RIGHT(id)] = true;
                 mbx_put(snd, privp[id]);
+                test(LEFT(id), isAvail, isHungry);
+                test(RIGHT(id), isAvail, isHungry);
             } break;
         }
     }
