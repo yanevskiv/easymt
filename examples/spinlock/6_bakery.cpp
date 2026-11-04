@@ -2,7 +2,7 @@
 #include <thread.h>
 #define N 5
 
-volatile int turn[N];
+volatile int turn[N] = { 0 };
 
 void thread(int id)
 {
@@ -20,7 +20,7 @@ void thread(int id)
         for (int otherId = 0; otherId < N; otherId++)  {
             if (id == otherId)
                 continue;
-            while (turn[otherId] < turn[id] || (turn[otherId] == turn[id] && otherId < id))
+            while (turn[otherId] != 0 && (turn[otherId] < turn[id] || (turn[otherId] == turn[id] && otherId < id)))
                 skip();
         }
 

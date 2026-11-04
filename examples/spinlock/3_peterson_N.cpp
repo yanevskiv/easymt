@@ -2,20 +2,20 @@
 #include <thread.h>
 #define N 5
 
-volatile int inLevel[N] = { 0 };
+volatile int inLevel[N] = { 0 }; // 0 = not trying to enter
 volatile int lastId[N] = { 0 };
 
 void thread(int id)
 {
     while (true) {
         /* LOCK */
-        for (int level = 0; level < N - 1; level++) {
+        for (int level = 1; level < N; level++) {
             inLevel[id] = level;
             lastId[level] = id;
             for (int otherId = 0; otherId < N; otherId++) {
                 if (id == otherId)
                     continue;
-                while (inLevel[id] < inLevel[otherId] && lastId[level] == id)
+                while (inLevel[otherId] >= inLevel[id] && lastId[level] == id)
                     skip();
             }
         }
