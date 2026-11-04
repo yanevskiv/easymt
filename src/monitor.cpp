@@ -74,7 +74,7 @@ private:
     // monitor mutex
     sem_t m_mutex;
 
-    // waiting queue (only used in SW monitor)
+    // urgent queue (only used in SUW monitor)
     std::queue<PrioSem*> m_wqueue;
 };
 
@@ -143,7 +143,7 @@ void ImplMonitor::enter()
 // leave monitor
 void ImplMonitor::leave()
 {
-    if (m_disc == SW && ! m_wqueue.empty()) {
+    if (m_disc == SUW && ! m_wqueue.empty()) {
         PrioSem *sem = m_wqueue.front(); 
         m_wqueue.pop();
         sem->signal();
@@ -203,15 +203,18 @@ void ImplCond::signal()
         throw "cond::signal() called but monitor is not set!";
     if (! m_queue.empty()) {
         PrioSem *wsem = nullptr;
-        if (m_monitor->disc() == SW) {
+        if (m_monitor->disc() == SUW) {
             wsem = new PrioSem{0, 0};
             m_monitor->m_wqueue.push(wsem);
         }
         PrioSem* sem = m_queue.top();
         m_queue.pop();
         sem->signal();
-        if (m_monitor->disc() == SW && wsem != nullptr) {
+        if (m_monitor->disc() == SUW && wsem != nullptr) {
             wsem->wait();
+            delete wsem;
+        } else if (m_monitor->disc() == SW) {
+            m_monitor->enter();
         }
     }
 }

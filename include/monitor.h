@@ -93,14 +93,14 @@ struct SC_Monitor : Monitor {
     }
 };
 
-// Signal-And-Wait monitor (SUW by default)
+// Signal-And-Wait monitor
 struct SW_Monitor : Monitor {
     SW_Monitor() : Monitor(SW) {
     
     }
 };
 
-// Signal-And-Urgent-Wait monitor (not implemented)
+// Signal-And-Urgent-Wait monitor
 struct SUW_Monitor : Monitor {
     SUW_Monitor() : Monitor(SUW) {
     
