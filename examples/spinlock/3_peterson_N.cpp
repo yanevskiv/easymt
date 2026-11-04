@@ -2,7 +2,7 @@
 #include <thread.h>
 #define N 5
 
-volatile int inLevel[N] = { 0 }; // 0 = not trying to enter
+volatile int inLevel[N] = { 0 };
 volatile int lastId[N] = { 0 };
 
 void thread(int id)
